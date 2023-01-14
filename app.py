@@ -1,4 +1,5 @@
 from dash import Dash, dcc, html, Input, Output, State
+import plotly.express as px
 import pandas as pd
 import sqlite3
 
@@ -35,7 +36,8 @@ app.layout = html.Div([
     'Job',
     dcc.Dropdown(occupation_titles, placeholder='type in a job!', id='occupation-titles'),
     html.Button(id='submit-button-state', n_clicks=0, children='Submit'),
-    html.Div(id='output-state')
+    html.Div(id='output-state'),
+    dcc.Graph(id='annual_mean_wage_usd')
 ])
 
 wage_data_to_graph = {
@@ -51,12 +53,12 @@ wage_data_to_graph = {
     'county_name': [],
     'msa_code': []
 }
-wage_region_df = 'blah'
+msa_job_set = set()
 # print(wage_df.columns)
 
 # this callback is ripped from here: https://dash.plotly.com/basic-callbacks. Check the submit button section to finish this off
 # for the case of giving montreal, canada as the input
-@app.callback(Output('output-state', 'children'),
+@app.callback(Output('annual_mean_wage_usd', 'figure'),
               Input('submit-button-state', 'n_clicks'),
               State('county-names', 'value'),
               State('occupation-titles', 'value'))
@@ -76,32 +78,40 @@ def update_output(n_clicks, county_name, occupation_title):
     # get the row from the wage dataframe with matching msa code and occupation
     row = wage_df.loc[(wage_df['county_code'] == str(msa_code)) & (wage_df['occupation_title'] == occupation_title)]
     if not row.empty:
-        print('===')
-        print(row['employment'].values[0])
-        print(row)
-        print('===')
-        wage_data_to_graph['occupation_title'].append(occupation_title)
-        wage_data_to_graph['employment'].append(row['employment'].values[0])
-        wage_data_to_graph['employment_rse_percent'].append(row['employment_rse_percent'].values[0])
-        wage_data_to_graph['employment_per_1000_jobs'].append(row['employment_per_1000_jobs'].values[0])
-        wage_data_to_graph['location_quotient'].append(row['location_quotient'].values[0])
-        wage_data_to_graph['median_hourly_wage_usd'].append(row['median_hourly_wage_usd'].values[0])
-        wage_data_to_graph['mean_hourly_wage_usd'].append(row['mean_hourly_wage_usd'].values[0])
-        wage_data_to_graph['annual_mean_wage_usd'].append(row['annual_mean_wage_usd'].values[0])
-        wage_data_to_graph['mean_wage_rse_percent'].append(row['mean_wage_rse_percent'].values[0])
-        wage_data_to_graph['msa_code'].append(row['county_code'].values[0])
-        wage_data_to_graph['county_name'].append(county_name)
+        if not (county_name, occupation_title) in msa_job_set:
+            msa_job_set.add((county_name, occupation_title))
+            print('===')
+            print(row['employment'].values[0])
+            print(row)
+            print('===')
+            wage_data_to_graph['occupation_title'].append(occupation_title)
+            wage_data_to_graph['employment'].append(row['employment'].values[0])
+            wage_data_to_graph['employment_rse_percent'].append(row['employment_rse_percent'].values[0])
+            wage_data_to_graph['employment_per_1000_jobs'].append(row['employment_per_1000_jobs'].values[0])
+            wage_data_to_graph['location_quotient'].append(row['location_quotient'].values[0])
+            wage_data_to_graph['median_hourly_wage_usd'].append(row['median_hourly_wage_usd'].values[0])
+            wage_data_to_graph['mean_hourly_wage_usd'].append(row['mean_hourly_wage_usd'].values[0])
+            wage_data_to_graph['annual_mean_wage_usd'].append(row['annual_mean_wage_usd'].values[0])
+            wage_data_to_graph['mean_wage_rse_percent'].append(row['mean_wage_rse_percent'].values[0])
+            wage_data_to_graph['msa_code'].append(row['county_code'].values[0])
+            wage_data_to_graph['county_name'].append(county_name)
+        else:
+            print('you\'ve already entered that pair before!')
     else:
         print(county_name, occupation_title)
         print('row was empty. no results found!!! >:(')
     
     print(wage_data_to_graph)
+    wage_data_to_graph_df = pd.DataFrame(data=wage_data_to_graph)
 
-    return u'''
-        The Button has been pressed {} times,
-        Input 1 is "{}",
-        and Input 2 is "{}"
-    '''.format(n_clicks, county_name, occupation_title)
+    # TODO: next step!!!!
+    # convert the dictionary back into a dataframe and graph it how you want!
+    # return u'''
+    #     The Button has been pressed {} times,
+    #     Input 1 is "{}",
+    #     and Input 2 is "{}"
+    # '''.format(n_clicks, county_name, occupation_title)
+    return px.bar(wage_data_to_graph_df, x='county_name', y='annual_mean_wage_usd')
 
 # next steps:
 # need to use the county that was entered and the occupation to retrieve the appropriate data from the wage dataframe
