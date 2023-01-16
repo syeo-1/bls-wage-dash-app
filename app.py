@@ -35,7 +35,7 @@ app.layout = html.Div([
     dcc.Dropdown(counties, placeholder='type in a county!', id='county-names'),
     'Job',
     dcc.Dropdown(occupation_titles, placeholder='type in a job!', id='occupation-titles'),
-    html.Button(id='submit-button-state', n_clicks=0, children='Submit'),
+    html.Button(id='submit-button-state', n_clicks=0, children='Display Data'),
     html.Div(id='output-state'),
     dcc.Graph(id='annual_mean_wage_usd')
 ])
@@ -51,7 +51,8 @@ wage_data_to_graph = {
     'annual_mean_wage_usd': [],
     'mean_wage_rse_percent': [],
     'county_name': [],
-    'msa_code': []
+    'msa_code': [],
+    'msa_job': []
 }
 msa_job_set = set()
 # print(wage_df.columns)
@@ -95,6 +96,7 @@ def update_output(n_clicks, county_name, occupation_title):
             wage_data_to_graph['mean_wage_rse_percent'].append(row['mean_wage_rse_percent'].values[0])
             wage_data_to_graph['msa_code'].append(row['county_code'].values[0])
             wage_data_to_graph['county_name'].append(county_name)
+            wage_data_to_graph['msa_job'].append(':'.join([county_name, occupation_title])) # use this to remove data from the graph!
         else:
             print('you\'ve already entered that pair before!')
     else:
@@ -111,7 +113,7 @@ def update_output(n_clicks, county_name, occupation_title):
     #     Input 1 is "{}",
     #     and Input 2 is "{}"
     # '''.format(n_clicks, county_name, occupation_title)
-    return px.bar(wage_data_to_graph_df, x='county_name', y='annual_mean_wage_usd')
+    return px.bar(wage_data_to_graph_df, y='annual_mean_wage_usd', hover_data=['county_name', 'occupation_title'])
 
 # next steps:
 # need to use the county that was entered and the occupation to retrieve the appropriate data from the wage dataframe
