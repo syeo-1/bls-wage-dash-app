@@ -106,13 +106,11 @@ def update_output(n_clicks, county_name, occupation_title):
     print(wage_data_to_graph)
     wage_data_to_graph_df = pd.DataFrame(data=wage_data_to_graph)
 
-    # TODO: next step!!!!
-    # convert the dictionary back into a dataframe and graph it how you want!
-    # return u'''
-    #     The Button has been pressed {} times,
-    #     Input 1 is "{}",
-    #     and Input 2 is "{}"
-    # '''.format(n_clicks, county_name, occupation_title)
+    # TODO: next steps!!!!
+    # 1. adding in a remove button for graph data
+    # 2. get data for all jobs within a particular state. So have state as a drop down and show all data for that state!
+    # 3. adding in the other data points in differnt graphs below!
+    # 4. deploy onto a cloud platform so other people can use/check it out!
     return px.bar(wage_data_to_graph_df, y='annual_mean_wage_usd', hover_data=['county_name', 'occupation_title'])
 
 # next steps:
