@@ -1,4 +1,4 @@
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, dcc, html, Input, Output, State, ctx, ALL
 import plotly.express as px
 import pandas as pd
 import sqlite3
@@ -78,13 +78,33 @@ msa_job_set = set()
 # this should create the buttons for removal, but won't give functionality!
 @app.callback(Output('remove-graphs', 'children'),
               Input('submit-button-state', 'n_clicks'),
+              Input({'type': 'remove-single-graph', 'index': ALL}, 'n_clicks'),
               State('remove-graphs', 'children'))
-def update_removal_list(n_clicks, children):
+def update_removal_list(n_clicks, _, children):
     # new_remove_button = html.Button(id=':'.join([occupation_title, county_name]))
+
+    # TODO:
+    # bug: if the wage data already exists, the remove button will still be
+    # created. Need to somehow check here if the data already exists
+    # before creating a remove button for it
     if n_clicks == 0: return children
-    new_remove_button = html.Button(children='remove '+str(len(children)), id=str(n_clicks))
-    children.append(new_remove_button)
-    return children
+    if 'submit-button-state' == ctx.triggered_id:
+        print('asekljfnawe')
+        new_remove_button = html.Button(
+            children='remove '+str(len(children)),
+            id= {
+                'type': 'remove-single-graph',
+                'index': len(children)
+            }
+        )
+        children.append(new_remove_button)
+        return children
+    else:
+        # a remove button was pressed. figure out which one 
+        # and remove it from the list of remove buttons!
+        print('remove button pressed?')
+        return children
+
 
 # this callback is ripped from here: https://dash.plotly.com/basic-callbacks. Check the submit button section to finish this off
 # for the case of giving montreal, canada as the input
