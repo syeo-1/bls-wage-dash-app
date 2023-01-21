@@ -29,6 +29,18 @@ occupation_titles = wage_df['occupation_title'].unique()
 
 counties = region_df['May 2021 MSA name'].unique()
 
+def create_job_county_list(jobs, counties):
+    result = []
+
+    for job in jobs:
+        for county in counties:
+            result.append(','.join([job, county]))
+
+    return result
+# print('poop')
+county_jobs = create_job_county_list(occupation_titles, counties)
+# print(county_jobs)
+
 
 app.layout = html.Div([
     'County',
@@ -36,6 +48,7 @@ app.layout = html.Div([
     'Job',
     dcc.Dropdown(occupation_titles, placeholder='type in a job!', id='occupation-titles'),
     html.Button(id='submit-button-state', n_clicks=0, children='Display Data'),
+    html.Div(id='remove-graphs', children=[]),
     html.Div(id='output-state'),
     dcc.Graph(id='annual_mean_wage_usd')
 ])
@@ -56,6 +69,22 @@ wage_data_to_graph = {
 }
 msa_job_set = set()
 # print(wage_df.columns)
+
+# pressing a remove will rerender based on the button list, not based on the
+# data shown in the graphs!
+
+# check pattern-matching callbacks section!
+# the section for multiple filters could help!
+# this should create the buttons for removal, but won't give functionality!
+@app.callback(Output('remove-graphs', 'children'),
+              Input('submit-button-state', 'n_clicks'),
+              State('remove-graphs', 'children'))
+def update_removal_list(n_clicks, children):
+    # new_remove_button = html.Button(id=':'.join([occupation_title, county_name]))
+    if n_clicks == 0: return children
+    new_remove_button = html.Button(children='remove '+str(len(children)), id=str(n_clicks))
+    children.append(new_remove_button)
+    return children
 
 # this callback is ripped from here: https://dash.plotly.com/basic-callbacks. Check the submit button section to finish this off
 # for the case of giving montreal, canada as the input
