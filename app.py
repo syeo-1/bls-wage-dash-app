@@ -50,7 +50,9 @@ app.layout = html.Div([
     html.Button(id='submit-button-state', n_clicks=0, children='Display Data'),
     html.Div(id='remove-graphs', children=[]),
     html.Div(id='output-state'),
-    dcc.Graph(id='annual_mean_wage_usd')
+    dcc.Graph(id='hourly_median_wage_usd'),
+    dcc.Graph(id='annual_mean_wage_usd'),
+    
 ])
 
 wage_data_to_graph = {
@@ -116,6 +118,7 @@ msa_job_set = set()
 @app.callback(
     Output('remove-graphs', 'children'),
     Output('annual_mean_wage_usd', 'figure'),
+    Output('hourly_median_wage_usd', 'figure'),
               Input('submit-button-state', 'n_clicks'),
               Input({'type': 'remove-single-graph', 'index': ALL}, 'n_clicks'),
               State('remove-graphs', 'children'),
@@ -205,7 +208,10 @@ def update_output(n_clicks, _, children, county_name, occupation_title):
     # 2. get data for all jobs within a particular state. So have state as a drop down and show all data for that state!
     # 3. adding in the other data points in differnt graphs below!
     # 4. deploy onto a cloud platform so other people can use/check it out!
-    return children, px.bar(wage_data_to_graph_df, y='annual_mean_wage_usd', hover_data=['county_name', 'occupation_title'])
+    return (children,
+    px.bar(wage_data_to_graph_df, y='annual_mean_wage_usd', hover_data=['county_name', 'occupation_title']),
+    px.bar(wage_data_to_graph_df, y='median_hourly_wage_usd', hover_data=['county_name', 'occupation_title'])
+    )
 
 # next steps:
 # need to use the county that was entered and the occupation to retrieve the appropriate data from the wage dataframe
