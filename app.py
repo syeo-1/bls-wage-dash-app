@@ -2,14 +2,17 @@ from dash import Dash, dcc, html, Input, Output, State, ctx, ALL
 import plotly.express as px
 import pandas as pd
 import sqlite3
-
+# import dash_bootstrap_components as dbc
 import json
 
 # check the "simple example" section here for reference: https://dash.plotly.com/clientside-callbacks
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
+
 
 app = Dash(__name__, external_stylesheets=external_stylesheets)
+# app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, dbc_css])
 
 # create connection to the database first
 conn = sqlite3.connect('wage_stats.db')
@@ -44,15 +47,15 @@ county_jobs = create_job_county_list(occupation_titles, counties)
 
 app.layout = html.Div([
     'County',
-    dcc.Dropdown(counties, placeholder='type in a county!', id='county-names'),
+    dcc.Dropdown(counties, placeholder='type in a county!', id='county-names', ),
     'Job',
     dcc.Dropdown(occupation_titles, placeholder='type in a job!', id='occupation-titles'),
     html.Button(id='submit-button-state', n_clicks=0, children='Display Data'),
     html.Div(id='remove-graphs', children=[]),
     html.Div(id='output-state'),
-    dcc.Graph(id='hourly_median_wage_usd'),
     dcc.Graph(id='annual_mean_wage_usd'),
-    
+    dcc.Graph(id='hourly_median_wage_usd'),
+
 ])
 
 wage_data_to_graph = {
