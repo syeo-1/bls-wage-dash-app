@@ -1,5 +1,6 @@
 from dash import Dash, dcc, html, Input, Output, State, ctx, ALL
 import plotly.express as px
+from dash.exceptions import PreventUpdate
 import pandas as pd
 import sqlite3
 # import dash_bootstrap_components as dbc
@@ -10,6 +11,8 @@ import json
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 
+# TODO: search up: why global variables will break your app (in dash)
+# looks like the main way to fix is by using: sharing data between callbacks
 
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 server=app.server
@@ -47,6 +50,20 @@ county_jobs = create_job_county_list(occupation_titles, counties)
 
 
 app.layout = html.Div([
+    # dcc.Store(id='wage-df-dict', storage_type='local', data={
+    # 'occupation_title': [],
+    # 'employment': [],
+    # 'employment_rse_percent': [],
+    # 'employment_per_1000_jobs': [],
+    # 'location_quotient': [],
+    # 'median_hourly_wage_usd': [],
+    # 'mean_hourly_wage_usd': [],
+    # 'annual_mean_wage_usd': [],
+    # 'mean_wage_rse_percent': [],
+    # 'county_name': [],
+    # 'msa_code': [],
+    # 'msa_job': []
+    # }),
     'County',
     dcc.Dropdown(counties, placeholder='type in a county!', id='county-names', ),
     'Job',
@@ -56,10 +73,8 @@ app.layout = html.Div([
     html.Div(id='output-state'),
     dcc.Graph(id='annual_mean_wage_usd'),
     dcc.Graph(id='hourly_median_wage_usd'),
-
-])
-
-wage_data_to_graph = {
+    # create store for the dataframe to graph
+    dcc.Store(id='county-job-pairs', data={
     'occupation_title': [],
     'employment': [],
     'employment_rse_percent': [],
@@ -72,65 +87,58 @@ wage_data_to_graph = {
     'county_name': [],
     'msa_code': [],
     'msa_job': []
-}
-msa_job_set = set()
-# print(wage_df.columns)
+    }),
+    # create store for values user has already entered
+    dcc.Store(id='entered-county-job-pairs', data=[]) 
+])
 
-# pressing a remove will rerender based on the button list, not based on the
-# data shown in the graphs!
+# wage_data_to_graph = {
+#     'occupation_title': [],
+#     'employment': [],
+#     'employment_rse_percent': [],
+#     'employment_per_1000_jobs': [],
+#     'location_quotient': [],
+#     'median_hourly_wage_usd': [],
+#     'mean_hourly_wage_usd': [],
+#     'annual_mean_wage_usd': [],
+#     'mean_wage_rse_percent': [],
+#     'county_name': [],
+#     'msa_code': [],
+#     'msa_job': []
+# }
 
-# check pattern-matching callbacks section!
-# the section for multiple filters could help!
-# this should create the buttons for removal, but won't give functionality!
-# @pp.callback(
-#     Output('remove-graphs', 'children'),
-#     Output('annual_mean_wage_usd', 'figure'),
-#               Input('submit-button-state', 'n_clicks'),
-#               Input({'type': 'remove-single-graph', 'index': ALL}, 'n_clicks'),
-#               State('remove-graphs', 'children'))
-# def update_removal_list(n_clicks, _, children):
-#     # new_remove_button = html.Button(id=':'.join([occupation_title, county_name]))
+# need this to keep track of what user has entered in so far.
+# msa_job_set = set()
 
-#     # TODO:
-#     # bug: if the wage data already exists, the remove button will still be
-#     # created. Need to somehow check here if the data already exists
-#     # before creating a remove button for it
-#     if n_clicks == 0: return children
-#     if 'submit-button-state' == ctx.triggered_id:
-#         new_remove_button = html.Button(
-#             children='remove '+str(len(children)),
-#             id= {
-#                 'type': 'remove-single-graph',
-#                 'index': len(children)
-#             }
-#         )
-#         children.append(new_remove_button)
-#         return children
-#     else:
-#         # a remove button was pressed. figure out which one 
-#         # and remove it from the list of remove buttons!
-#         # print(ctx.triggered_id)
-#         index_to_remove = ctx.triggered_id['index']
-#         for col in wage_data_to_graph:
-#             del wage_data_to_graph[col][index_to_remove]
-#         children.pop()
-#         return childrena
+# take the existing dataset that's on display in the browser
+# store it in a variable inside the function
+# figure out what the user has entered in as values to save
+# append those new values to the dataset variable taken from the user's browser
+# return the 
 
 
-# this callback is ripped from here: https://dash.plotly.com/basic-callbacks. Check the submit button section to finish this off
-# for the case of giving montreal, canada as the input
 @app.callback(
+
     Output('remove-graphs', 'children'),
     Output('annual_mean_wage_usd', 'figure'),
     Output('hourly_median_wage_usd', 'figure'),
+    Output('county-job-pairs', 'data'),
+    Output('entered-county-job-pairs', 'data'),
               Input('submit-button-state', 'n_clicks'),
               Input({'type': 'remove-single-graph', 'index': ALL}, 'n_clicks'),
               State('remove-graphs', 'children'),
               State('county-names', 'value'),
-              State('occupation-titles', 'value'))
-def update_output(n_clicks, _, children, county_name, occupation_title):
+              State('occupation-titles', 'value'),
+              State('county-job-pairs', 'data'),
+              State('entered-county-job-pairs', 'data'))
+def update_output(n_clicks, _, children, county_name, occupation_title, county_job_dict, entered_county_job_pairs):
+    '''
+    update the graphs and remove buttons upon clicking the add data button
+    '''
+    # prevent the None callbacks so Store components are only updated when data is available
+    if n_clicks is None:
+        raise PreventUpdate
 
-    # get the county_code with the county name user has given
 
     if ctx.triggered_id == 'submit-button-state':
         # get the county_code (May 2021 MSA) from the region data dataframe
@@ -145,24 +153,24 @@ def update_output(n_clicks, _, children, county_name, occupation_title):
         # get the row from the wage dataframe with matching msa code and occupation
         row = wage_df.loc[(wage_df['county_code'] == str(msa_code)) & (wage_df['occupation_title'] == occupation_title)]
         if not row.empty:
-            if not (county_name, occupation_title) in msa_job_set:
-                msa_job_set.add((county_name, occupation_title))
+            if not (county_name, occupation_title) in entered_county_job_pairs:
+                entered_county_job_pairs.append((county_name, occupation_title))
                 # print('===')
                 # print(row['employment'].values[0])
                 # print(row)
                 # print('===')
-                wage_data_to_graph['occupation_title'].append(occupation_title)
-                wage_data_to_graph['employment'].append(row['employment'].values[0])
-                wage_data_to_graph['employment_rse_percent'].append(row['employment_rse_percent'].values[0])
-                wage_data_to_graph['employment_per_1000_jobs'].append(row['employment_per_1000_jobs'].values[0])
-                wage_data_to_graph['location_quotient'].append(row['location_quotient'].values[0])
-                wage_data_to_graph['median_hourly_wage_usd'].append(row['median_hourly_wage_usd'].values[0])
-                wage_data_to_graph['mean_hourly_wage_usd'].append(row['mean_hourly_wage_usd'].values[0])
-                wage_data_to_graph['annual_mean_wage_usd'].append(row['annual_mean_wage_usd'].values[0])
-                wage_data_to_graph['mean_wage_rse_percent'].append(row['mean_wage_rse_percent'].values[0])
-                wage_data_to_graph['msa_code'].append(row['county_code'].values[0])
-                wage_data_to_graph['county_name'].append(county_name)
-                wage_data_to_graph['msa_job'].append(':'.join([county_name, occupation_title])) # use this to remove data from the graph!
+                county_job_dict['occupation_title'].append(occupation_title)
+                county_job_dict['employment'].append(row['employment'].values[0])
+                county_job_dict['employment_rse_percent'].append(row['employment_rse_percent'].values[0])
+                county_job_dict['employment_per_1000_jobs'].append(row['employment_per_1000_jobs'].values[0])
+                county_job_dict['location_quotient'].append(row['location_quotient'].values[0])
+                county_job_dict['median_hourly_wage_usd'].append(row['median_hourly_wage_usd'].values[0])
+                county_job_dict['mean_hourly_wage_usd'].append(row['mean_hourly_wage_usd'].values[0])
+                county_job_dict['annual_mean_wage_usd'].append(row['annual_mean_wage_usd'].values[0])
+                county_job_dict['mean_wage_rse_percent'].append(row['mean_wage_rse_percent'].values[0])
+                county_job_dict['msa_code'].append(row['county_code'].values[0])
+                county_job_dict['county_name'].append(county_name)
+                county_job_dict['msa_job'].append(':'.join([county_name, occupation_title])) # use this to remove data from the graph!
                 
                 new_remove_button = html.Button(
                     children='remove '+str(len(children)),
@@ -184,14 +192,14 @@ def update_output(n_clicks, _, children, county_name, occupation_title):
         county_to_remove = None
         occupation_to_remove = None
         print(f'index to remove: {index_to_remove}')
-        for col in wage_data_to_graph:
+        for col in county_job_dict:
             if col == 'county_name':
-                county_to_remove = wage_data_to_graph['county_name'][index_to_remove]
+                county_to_remove = county_job_dict['county_name'][index_to_remove]
                 print(f'to remove: {county_to_remove}')
             elif col == 'occupation_title':
-                occupation_to_remove = wage_data_to_graph['occupation_title'][index_to_remove]
+                occupation_to_remove = county_job_dict['occupation_title'][index_to_remove]
                 print(f'to remove: {occupation_to_remove}')
-            del wage_data_to_graph[col][index_to_remove]
+            del county_job_dict[col][index_to_remove]
         children.pop()
 
         # print('==============')
@@ -201,10 +209,12 @@ def update_output(n_clicks, _, children, county_name, occupation_title):
         # print(msa_job_set)
         # print(county_to_remove)
         # print(occupation_to_remove)
-        msa_job_set.remove((county_to_remove, occupation_to_remove))
-        print(msa_job_set)
+        print(f'entered_county_job_pairs: {entered_county_job_pairs}')
+        print(f'use this to remove: {(county_to_remove, occupation_to_remove)}')
+        entered_county_job_pairs.remove([county_to_remove, occupation_to_remove])
+        # print(msa_job_set)
 
-    wage_data_to_graph_df = pd.DataFrame(data=wage_data_to_graph)
+    wage_data_to_graph_df = pd.DataFrame(data=county_job_dict)
     # print(ctx.triggered_id)
     # print(type(ctx.triggered_id))
     # TODO: next steps!!!!
@@ -214,7 +224,9 @@ def update_output(n_clicks, _, children, county_name, occupation_title):
     # 4. deploy onto a cloud platform so other people can use/check it out!
     return (children,
     px.bar(wage_data_to_graph_df, y='annual_mean_wage_usd', hover_data=['county_name', 'occupation_title']),
-    px.bar(wage_data_to_graph_df, y='median_hourly_wage_usd', hover_data=['county_name', 'occupation_title'])
+    px.bar(wage_data_to_graph_df, y='median_hourly_wage_usd', hover_data=['county_name', 'occupation_title']),
+    county_job_dict,
+    entered_county_job_pairs
     )
 
 # next steps:
