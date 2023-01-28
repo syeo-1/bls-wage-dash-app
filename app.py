@@ -76,17 +76,17 @@ app.layout = html.Div([
     # create store for the dataframe to graph
     dcc.Store(id='county-job-pairs', data={
     'occupation_title': [],
-    'employment': [],
-    'employment_rse_percent': [],
-    'employment_per_1000_jobs': [],
-    'location_quotient': [],
+    # 'employment': [],
+    # 'employment_rse_percent': [],
+    # 'employment_per_1000_jobs': [],
+    # 'location_quotient': [],
     'median_hourly_wage_usd': [],
-    'mean_hourly_wage_usd': [],
+    # 'mean_hourly_wage_usd': [],
     'annual_mean_wage_usd': [],
-    'mean_wage_rse_percent': [],
+    # 'mean_wage_rse_percent': [],
     'county_name': [],
-    'msa_code': [],
-    'msa_job': []
+    # 'msa_code': [],
+    # 'msa_job': []
     }),
     # create store for values user has already entered
     dcc.Store(id='entered-county-job-pairs', data=[]) 
@@ -153,24 +153,24 @@ def update_output(n_clicks, _, children, county_name, occupation_title, county_j
         # get the row from the wage dataframe with matching msa code and occupation
         row = wage_df.loc[(wage_df['county_code'] == str(msa_code)) & (wage_df['occupation_title'] == occupation_title)]
         if not row.empty:
-            if not (county_name, occupation_title) in entered_county_job_pairs:
+            if not [county_name, occupation_title] in entered_county_job_pairs:
                 entered_county_job_pairs.append((county_name, occupation_title))
                 # print('===')
                 # print(row['employment'].values[0])
                 # print(row)
                 # print('===')
                 county_job_dict['occupation_title'].append(occupation_title)
-                county_job_dict['employment'].append(row['employment'].values[0])
-                county_job_dict['employment_rse_percent'].append(row['employment_rse_percent'].values[0])
-                county_job_dict['employment_per_1000_jobs'].append(row['employment_per_1000_jobs'].values[0])
-                county_job_dict['location_quotient'].append(row['location_quotient'].values[0])
+                # county_job_dict['employment'].append(row['employment'].values[0])
+                # county_job_dict['employment_rse_percent'].append(row['employment_rse_percent'].values[0])
+                # county_job_dict['employment_per_1000_jobs'].append(row['employment_per_1000_jobs'].values[0])
+                # county_job_dict['location_quotient'].append(row['location_quotient'].values[0])
                 county_job_dict['median_hourly_wage_usd'].append(row['median_hourly_wage_usd'].values[0])
-                county_job_dict['mean_hourly_wage_usd'].append(row['mean_hourly_wage_usd'].values[0])
+                # county_job_dict['mean_hourly_wage_usd'].append(row['mean_hourly_wage_usd'].values[0])
                 county_job_dict['annual_mean_wage_usd'].append(row['annual_mean_wage_usd'].values[0])
-                county_job_dict['mean_wage_rse_percent'].append(row['mean_wage_rse_percent'].values[0])
-                county_job_dict['msa_code'].append(row['county_code'].values[0])
+                # county_job_dict['mean_wage_rse_percent'].append(row['mean_wage_rse_percent'].values[0])
+                # county_job_dict['msa_code'].append(row['county_code'].values[0])
                 county_job_dict['county_name'].append(county_name)
-                county_job_dict['msa_job'].append(':'.join([county_name, occupation_title])) # use this to remove data from the graph!
+                # county_job_dict['msa_job'].append(':'.join([county_name, occupation_title])) # use this to remove data from the graph!
                 
                 new_remove_button = html.Button(
                     children='remove '+str(len(children)),
