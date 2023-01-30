@@ -5,6 +5,8 @@ import pandas as pd
 import sqlite3
 # import dash_bootstrap_components as dbc
 import json
+import ast
+
 
 # check the "simple example" section here for reference: https://dash.plotly.com/clientside-callbacks
 
@@ -31,6 +33,11 @@ region_df = pd.read_sql_table('region_data', 'sqlite:///wage_stats.db')
 occupation_titles = wage_df['occupation_title'].unique()
 
 # print(region_df.head())
+# have county name code map so look up is faster
+county_name_code_map = None
+with open('county_name_code_map.txt', 'r') as f:
+    file_contents = f.read()
+    county_name_code_map = ast.literal_eval(file_contents)
 
 # get unique list of the counties!
 
@@ -142,10 +149,10 @@ def update_output(n_clicks, _, children, county_name, occupation_title, county_j
 
     if ctx.triggered_id == 'submit-button-state':
         # get the county_code (May 2021 MSA) from the region data dataframe
-        msa_code = None
-        for _, row in region_df.iterrows():
-            if row['May 2021 MSA name'] == county_name:
-                msa_code = row['May 2021 MSA code ']
+        msa_code = county_name_code_map[county_name]
+        # for _, row in region_df.iterrows():
+        #     if row['May 2021 MSA name'] == county_name:
+        #         msa_code = row['May 2021 MSA code ']
 
         # print(msa_code)
         print(county_name, occupation_title)
@@ -244,5 +251,5 @@ def update_output(n_clicks, _, children, county_name, occupation_title, county_j
 
 
 if __name__ == '__main__':
-    # app.run_server(debug=True)
-    app.run_server(debug=False)
+    app.run_server(debug=True)
+    # app.run_server(debug=False)
